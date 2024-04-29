@@ -4,7 +4,30 @@
 
 - [Linux Kernel Development Course - Daniel McCarthy](https://www.udemy.com/course/linux-kernel-development-course/?couponCode=KEEPLEARNING)
 
-## Info
+- [Bootlin Elixir Cross Referencer](https://elixir.bootlin.com/linux/latest/source)
+
+## Building
+
+- With CMake
+
+```bash
+ggm@gAN515-52:~/Documents/tsmotter/lkd (master)$ rm -rf build && cmake -S . -B build -D m_target=character-hello
+...
+ggm@gAN515-52:~/Documents/tsmotter/lkd (master)$ cmake --build build --parallel `nproc`
+...
+```
+
+- Without CMake
+
+```bash
+ggm@gAN515-52:~/Documents/tsmotter/lkd (master)$ make
+...
+ggm@gAN515-52:~/Documents/tsmotter/lkd (master)$ make clean
+```
+
+## Study notes
+
+### Lesson 1 - Hello World Device
 
 - During building, I had the following problem:
 
@@ -14,7 +37,7 @@ make -C /lib/modules/6.5.0-28-generic/build M=/home/ggm/Documents/tsmotter/lkd m
 make[1]: Entering directory '/usr/src/linux-headers-6.5.0-28-generic'
 warning: the compiler differs from the one used to build the kernel
   The kernel was built by: x86_64-linux-gnu-gcc-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0
-  You are using:           
+  You are using:
   CC [M]  /home/ggm/Documents/tsmotter/lkd/hello.o
 /bin/sh: 1: gcc-12: not found
 make[3]: *** [scripts/Makefile.build:251: /home/ggm/Documents/tsmotter/lkd/hello.o] Error 127
@@ -25,6 +48,7 @@ make: *** [Makefile:4: all] Error 2
 ```
 
 - [Here is the found solution:](https://askubuntu.com/a/1500018)
+
 ```bash
 ggm@gAN515-52:~/Documents/tsmotter/lkd $ which gcc
 /usr/bin/gcc
@@ -37,7 +61,7 @@ ggm@gAN515-52:~/Documents/tsmotter/lkd $ ls -al /usr/bin/gcc
 lrwxrwxrwx 1 root root 15 abr 28 10:55 /usr/bin/gcc -> /usr/bin/gcc-12
 ```
 
-- Build workds now...
+- Build works now...
 
 ```bash
 ggm@gAN515-52:~/Documents/tsmotter/lkd $ make
@@ -63,7 +87,7 @@ make[1]: Leaving directory '/usr/src/linux-headers-6.5.0-28-generic'
 - Load the module and see it's output in the kernel dmesg:
 
 ```bash
-ggm@gAN515-52:~/Documents/tsmotter/lkd $ sudo insmod hello.ko 
+ggm@gAN515-52:~/Documents/tsmotter/lkd $ sudo insmod hello.ko
 ggm@gAN515-52:~/Documents/tsmotter/lkd $ sudo dmesg | grep world
 [52854.539596] Hello world!
 ```
@@ -124,9 +148,12 @@ ggm@gAN515-52:~/Documents/tsmotter/lkd $ tldr lsmod
     lsmod
 ```
 
-## Making a simple character device
-- Create the file `character-hello.c`
+### Lesson 2 - Simple Character Device
+
+- Created the file `character-hello.c`
+
 - Edited the Makefile to `obj-m += character-hello.o`
+
 ```bash
 ggm@gAN515-52:~/Documents/tsmotter/lkd $ make
 ...
@@ -144,12 +171,13 @@ foo
 foo
 foo
 ^C
-root@gAN515-52:/home/ggm/Documents/tsmotter/lkd# 
+root@gAN515-52:/home/ggm/Documents/tsmotter/lkd#
 exit
 ggm@gAN515-52:~/Documents/tsmotter/lkd $ sudo rmmod character_hello
 ```
 
 - In another terminal:
+
 ```bash
 ggm@gAN515-52:~/Documents/tsmotter $ sudo dmesg -w
 [56748.437235] [Hello.ko] init OK
@@ -164,7 +192,18 @@ ggm@gAN515-52:~/Documents/tsmotter $ sudo dmesg -w
 [56890.458021] [Hello.ko] exit OK
 ```
 
+### inode, files
 
-- 
-```bash
-```
+- `struct file` represents an open file instance (a handle)
+
+- `struct inode` are more related to paths and attributes
+
+  - Short for "index node"
+
+  - The exact structure and content of an inode can vary depending on the specific file system implementation, but it typically contains metadata about the file or directory, such as its size, ownership, permissions, timestamps, and pointers to the data blocks where the file's actual content is stored on disk.
+
+- If more than one instance to `fopen` is called on the same file, it'll happen to exist multiple instances of `struct file` coexisting but only one instance of `struct inode`
+
+- There are `struct inode_operations` like get_link, permission, create, link, unlink, symlink, mkdir, rmdir, mknod, rename, setattr, getattr, etc
+
+- It is much more related to filesystems operations other than simple character devices
